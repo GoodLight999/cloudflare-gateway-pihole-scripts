@@ -31,23 +31,80 @@ jobs:
           node cf_gateway_rule_delete.js || true
           node cf_list_delete.js || true
       
-      - name: Generate dynamic 280blocker URL
+      - name: Check 280blocker enable flag
+        run: |
+          # 大文字小文字を無視して判定
+          ENABLE_FLAG=$(echo "${{ vars.ENABLE_280BLOCKER }}" | tr '[:upper:]' '[:lower:]')
+          
+          if [[ "$ENABLE_FLAG" =~ ^(true|1|yes|on)$ ]]; then
+            echo "ENABLE_280BLOCKER_NORMALIZED=true" >> $GITHUB_ENV
+            echo "ℹ 280blocker is enabled by configuration"
+          else
+            echo "ENABLE_280BLOCKER_NORMALIZED=false" >> $GITHUB_ENV
+            echo "ℹ 280blocker is disabled by configuration"
+          fi
+      
+      - name: Generate and validate 280blocker URL
+        if: env.ENABLE_280BLOCKER_NORMALIZED == 'true'
         run: |
           CURRENT_YYYYMM=$(date +%Y%m)
-          echo "280BLOCKER_URL=https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt" >> $GITHUB_ENV
-          echo "Generated 280blocker URL: https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
+          BLOCKER_URL="https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
+          
+          echo "Checking 280blocker URL: $BLOCKER_URL"
+          
+          # URL の正常性チェック（タイムアウト10秒）
+          if curl -Isf --max-time 10 "$BLOCKER_URL" > /dev/null 2>&1; then
+            echo "✓ 280blocker URL is accessible"
+            echo "280BLOCKER_URL=$BLOCKER_URL" >> $GITHUB_ENV
+            echo "USE_280BLOCKER=true" >> $GITHUB_ENV
+          else
+            echo "⚠ 280blocker URL is unreachable, trying previous month..."
+            
+            # 前月のURLでリトライ
+            PREV_MONTH=$(date -d "1 month ago" +%Y%m)
+            BLOCKER_URL_PREV="https://280blocker.net/files/280blocker_domain_ag_${PREV_MONTH}.txt"
+            
+            if curl -Isf --max-time 10 "$BLOCKER_URL_PREV" > /dev/null 2>&1; then
+              echo "✓ Previous month 280blocker URL is accessible"
+              echo "280BLOCKER_URL=$BLOCKER_URL_PREV" >> $GITHUB_ENV
+              echo "USE_280BLOCKER=true" >> $GITHUB_ENV
+            else
+              echo "⚠ 280blocker is completely unreachable, skipping..."
+              echo "USE_280BLOCKER=false" >> $GITHUB_ENV
+            fi
+          fi
       
       - name: Merge blocklist URLs
         run: |
-          if [ -n "${{ vars.BLOCKLIST_URLS }}" ]; then
-            MERGED_URLS="${{ vars.BLOCKLIST_URLS }}
+          # Repository Variables の内容を取得
+          BASE_URLS="${{ vars.BLOCKLIST_URLS }}"
+          
+          # 280blocker の有効化チェック（2段階）
+          if [ "${{ env.ENABLE_280BLOCKER_NORMALIZED }}" = "true" ] && [ "${{ env.USE_280BLOCKER }}" = "true" ]; then
+            if [ -n "$BASE_URLS" ]; then
+              MERGED_URLS="${BASE_URLS}
           ${{ env.280BLOCKER_URL }}"
+            else
+              MERGED_URLS="${{ env.280BLOCKER_URL }}"
+            fi
+            echo "✓ 280blocker added to blocklist"
           else
-            MERGED_URLS="${{ env.280BLOCKER_URL }}"
+            MERGED_URLS="$BASE_URLS"
+            if [ "${{ env.ENABLE_280BLOCKER_NORMALIZED }}" != "true" ]; then
+              echo "ℹ 280blocker is disabled by ENABLE_280BLOCKER variable"
+            else
+              echo "⚠ Proceeding without 280blocker (unreachable)"
+            fi
           fi
+          
+          # 複数行環境変数の設定
           echo "BLOCKLIST_URLS<<EOF" >> $GITHUB_ENV
           echo "$MERGED_URLS" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+          
+          # デバッグ出力（URLは表示しない、行数のみ）
+          URL_COUNT=$(echo "$MERGED_URLS" | grep -c "^http" || echo "0")
+          echo "Total blocklist URLs: $URL_COUNT"
           
       - name: Download filter lists
         env:
