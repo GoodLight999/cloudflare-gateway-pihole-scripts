@@ -31,56 +31,23 @@ jobs:
           node cf_gateway_rule_delete.js || true
           node cf_list_delete.js || true
       
-      - name: Check 280blocker enable flag
+      - name: Prepare 280blocker URL
         run: |
           # 大文字小文字を無視して判定
           ENABLE_FLAG=$(echo "${{ vars.ENABLE_280BLOCKER }}" | tr '[:upper:]' '[:lower:]')
           
           if [[ "$ENABLE_FLAG" =~ ^(true|1|yes|on)$ ]]; then
-            echo "ENABLE_280BLOCKER_NORMALIZED=true" >> $GITHUB_ENV
-            echo "ℹ 280blocker is enabled by configuration"
-          else
-            echo "ENABLE_280BLOCKER_NORMALIZED=false" >> $GITHUB_ENV
-            echo "ℹ 280blocker is disabled by configuration"
-          fi
-      
-      - name: Generate and validate 280blocker URL
-        if: env.ENABLE_280BLOCKER_NORMALIZED == 'true'
-        run: |
-          CURRENT_YYYYMM=$(date +%Y%m)
-          BLOCKER_URL="https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
-          
-          echo "Checking 280blocker URL: $BLOCKER_URL"
-          
-          # URL の正常性チェック（User-Agent追加、タイムアウト10秒、リダイレクト対応）
-          HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" \
-            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
-            --max-time 10 "$BLOCKER_URL" 2>&1 || echo "000")
-          
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✓ 280blocker URL is accessible (HTTP $HTTP_CODE)"
+            # 現在の年月を取得
+            CURRENT_YYYYMM=$(date +%Y%m)
+            BLOCKER_URL="https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
+            
+            echo "ℹ 280blocker is enabled"
+            echo "ℹ 280blocker URL: $BLOCKER_URL"
             echo "BLOCKER_280_URL=$BLOCKER_URL" >> $GITHUB_ENV
             echo "USE_280BLOCKER=true" >> $GITHUB_ENV
           else
-            echo "⚠ 280blocker URL returned HTTP $HTTP_CODE, trying previous month..."
-            
-            # 前月のURLでリトライ
-            PREV_MONTH=$(date -d "1 month ago" +%Y%m)
-            BLOCKER_URL_PREV="https://280blocker.net/files/280blocker_domain_ag_${PREV_MONTH}.txt"
-            
-            HTTP_CODE_PREV=$(curl -L -s -o /dev/null -w "%{http_code}" \
-              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
-              --max-time 10 "$BLOCKER_URL_PREV" 2>&1 || echo "000")
-            
-            if [ "$HTTP_CODE_PREV" = "200" ]; then
-              echo "✓ Previous month 280blocker URL is accessible (HTTP $HTTP_CODE_PREV)"
-              echo "BLOCKER_280_URL=$BLOCKER_URL_PREV" >> $GITHUB_ENV
-              echo "USE_280BLOCKER=true" >> $GITHUB_ENV
-            else
-              echo "⚠ 280blocker is completely unreachable (current: $HTTP_CODE, previous: $HTTP_CODE_PREV)"
-              echo "⚠ Proceeding without 280blocker - will use other blocklists only"
-              echo "USE_280BLOCKER=false" >> $GITHUB_ENV
-            fi
+            echo "ℹ 280blocker is disabled by ENABLE_280BLOCKER variable"
+            echo "USE_280BLOCKER=false" >> $GITHUB_ENV
           fi
       
       - name: Merge blocklist URLs
@@ -88,22 +55,18 @@ jobs:
           # Repository Variables の内容を取得
           BASE_URLS="${{ vars.BLOCKLIST_URLS }}"
           
-          # 280blocker の有効化チェック（2段階）
-          if [ "${{ env.ENABLE_280BLOCKER_NORMALIZED }}" = "true" ] && [ "${{ env.USE_280BLOCKER }}" = "true" ]; then
+          # 280blocker の有効化チェック
+          if [ "${{ env.USE_280BLOCKER }}" = "true" ]; then
             if [ -n "$BASE_URLS" ]; then
               MERGED_URLS="${BASE_URLS}
           ${{ env.BLOCKER_280_URL }}"
             else
               MERGED_URLS="${{ env.BLOCKER_280_URL }}"
             fi
-            echo "✓ 280blocker added to blocklist"
+            echo "✓ 280blocker will be added to blocklist"
           else
             MERGED_URLS="$BASE_URLS"
-            if [ "${{ env.ENABLE_280BLOCKER_NORMALIZED }}" != "true" ]; then
-              echo "ℹ 280blocker is disabled by ENABLE_280BLOCKER variable"
-            else
-              echo "⚠ Proceeding without 280blocker (unreachable)"
-            fi
+            echo "ℹ Using base blocklists only"
           fi
           
           # 複数行環境変数の設定
