@@ -30,10 +30,28 @@ jobs:
         run: |
           node cf_gateway_rule_delete.js || true
           node cf_list_delete.js || true
+      
+      - name: Generate dynamic 280blocker URL
+        run: |
+          CURRENT_YYYYMM=$(date +%Y%m)
+          echo "280BLOCKER_URL=https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt" >> $GITHUB_ENV
+          echo "Generated 280blocker URL: https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
+      
+      - name: Merge blocklist URLs
+        run: |
+          if [ -n "${{ vars.BLOCKLIST_URLS }}" ]; then
+            MERGED_URLS="${{ vars.BLOCKLIST_URLS }}
+          ${{ env.280BLOCKER_URL }}"
+          else
+            MERGED_URLS="${{ env.280BLOCKER_URL }}"
+          fi
+          echo "BLOCKLIST_URLS<<EOF" >> $GITHUB_ENV
+          echo "$MERGED_URLS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
           
       - name: Download filter lists
         env:
-          BLOCKLIST_URLS: ${{ vars.BLOCKLIST_URLS }}
+          BLOCKLIST_URLS: ${{ env.BLOCKLIST_URLS }}
           ALLOWLIST_URLS: ${{ vars.ALLOWLIST_URLS }}
         run: node download_lists.js
         
