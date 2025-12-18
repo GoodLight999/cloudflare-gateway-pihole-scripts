@@ -52,8 +52,10 @@ jobs:
           
           echo "Checking 280blocker URL: $BLOCKER_URL"
           
-          # URL の正常性チェック（タイムアウト10秒、リダイレクト対応）
-          HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 "$BLOCKER_URL" 2>&1 || echo "000")
+          # URL の正常性チェック（User-Agent追加、タイムアウト10秒、リダイレクト対応）
+          HTTP_CODE=$(curl -L -s -o /dev/null -w "%{http_code}" \
+            -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
+            --max-time 10 "$BLOCKER_URL" 2>&1 || echo "000")
           
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✓ 280blocker URL is accessible (HTTP $HTTP_CODE)"
@@ -66,7 +68,9 @@ jobs:
             PREV_MONTH=$(date -d "1 month ago" +%Y%m)
             BLOCKER_URL_PREV="https://280blocker.net/files/280blocker_domain_ag_${PREV_MONTH}.txt"
             
-            HTTP_CODE_PREV=$(curl -L -s -o /dev/null -w "%{http_code}" --max-time 10 "$BLOCKER_URL_PREV" 2>&1 || echo "000")
+            HTTP_CODE_PREV=$(curl -L -s -o /dev/null -w "%{http_code}" \
+              -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36" \
+              --max-time 10 "$BLOCKER_URL_PREV" 2>&1 || echo "000")
             
             if [ "$HTTP_CODE_PREV" = "200" ]; then
               echo "✓ Previous month 280blocker URL is accessible (HTTP $HTTP_CODE_PREV)"
