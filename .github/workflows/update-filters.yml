@@ -30,57 +30,10 @@ jobs:
         run: |
           node cf_gateway_rule_delete.js || true
           node cf_list_delete.js || true
-      
-      - name: Prepare 280blocker URL
-        run: |
-          # 大文字小文字を無視して判定
-          ENABLE_FLAG=$(echo "${{ vars.ENABLE_280BLOCKER }}" | tr '[:upper:]' '[:lower:]')
-          
-          if [[ "$ENABLE_FLAG" =~ ^(true|1|yes|on)$ ]]; then
-            # 現在の年月を取得
-            CURRENT_YYYYMM=$(date +%Y%m)
-            BLOCKER_URL="https://280blocker.net/files/280blocker_domain_ag_${CURRENT_YYYYMM}.txt"
-            
-            echo "ℹ 280blocker is enabled"
-            echo "ℹ 280blocker URL: $BLOCKER_URL"
-            echo "BLOCKER_280_URL=$BLOCKER_URL" >> $GITHUB_ENV
-            echo "USE_280BLOCKER=true" >> $GITHUB_ENV
-          else
-            echo "ℹ 280blocker is disabled by ENABLE_280BLOCKER variable"
-            echo "USE_280BLOCKER=false" >> $GITHUB_ENV
-          fi
-      
-      - name: Merge blocklist URLs
-        run: |
-          # Repository Variables の内容を取得
-          BASE_URLS="${{ vars.BLOCKLIST_URLS }}"
-          
-          # 280blocker の有効化チェック
-          if [ "${{ env.USE_280BLOCKER }}" = "true" ]; then
-            if [ -n "$BASE_URLS" ]; then
-              MERGED_URLS="${BASE_URLS}
-          ${{ env.BLOCKER_280_URL }}"
-            else
-              MERGED_URLS="${{ env.BLOCKER_280_URL }}"
-            fi
-            echo "✓ 280blocker will be added to blocklist"
-          else
-            MERGED_URLS="$BASE_URLS"
-            echo "ℹ Using base blocklists only"
-          fi
-          
-          # 複数行環境変数の設定
-          echo "BLOCKLIST_URLS<<EOF" >> $GITHUB_ENV
-          echo "$MERGED_URLS" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          
-          # デバッグ出力（URLは表示しない、行数のみ）
-          URL_COUNT=$(echo "$MERGED_URLS" | grep -c "^http" || echo "0")
-          echo "Total blocklist URLs: $URL_COUNT"
           
       - name: Download filter lists
         env:
-          BLOCKLIST_URLS: ${{ env.BLOCKLIST_URLS }}
+          BLOCKLIST_URLS: ${{ vars.BLOCKLIST_URLS }}
           ALLOWLIST_URLS: ${{ vars.ALLOWLIST_URLS }}
         run: node download_lists.js
         
