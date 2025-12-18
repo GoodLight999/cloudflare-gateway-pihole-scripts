@@ -55,7 +55,7 @@ jobs:
           # URL の正常性チェック（タイムアウト10秒）
           if curl -Isf --max-time 10 "$BLOCKER_URL" > /dev/null 2>&1; then
             echo "✓ 280blocker URL is accessible"
-            echo "280BLOCKER_URL=$BLOCKER_URL" >> $GITHUB_ENV
+            echo "BLOCKER_280_URL=$BLOCKER_URL" >> $GITHUB_ENV
             echo "USE_280BLOCKER=true" >> $GITHUB_ENV
           else
             echo "⚠ 280blocker URL is unreachable, trying previous month..."
@@ -66,7 +66,7 @@ jobs:
             
             if curl -Isf --max-time 10 "$BLOCKER_URL_PREV" > /dev/null 2>&1; then
               echo "✓ Previous month 280blocker URL is accessible"
-              echo "280BLOCKER_URL=$BLOCKER_URL_PREV" >> $GITHUB_ENV
+              echo "BLOCKER_280_URL=$BLOCKER_URL_PREV" >> $GITHUB_ENV
               echo "USE_280BLOCKER=true" >> $GITHUB_ENV
             else
               echo "⚠ 280blocker is completely unreachable, skipping..."
@@ -83,9 +83,9 @@ jobs:
           if [ "${{ env.ENABLE_280BLOCKER_NORMALIZED }}" = "true" ] && [ "${{ env.USE_280BLOCKER }}" = "true" ]; then
             if [ -n "$BASE_URLS" ]; then
               MERGED_URLS="${BASE_URLS}
-          ${{ env.280BLOCKER_URL }}"
+          ${{ env.BLOCKER_280_URL }}"
             else
-              MERGED_URLS="${{ env.280BLOCKER_URL }}"
+              MERGED_URLS="${{ env.BLOCKER_280_URL }}"
             fi
             echo "✓ 280blocker added to blocklist"
           else
