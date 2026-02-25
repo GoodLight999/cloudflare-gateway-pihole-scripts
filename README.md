@@ -59,11 +59,52 @@ Please note that:
    - `PING_URL`: /Optional/ The HTTP(S) URL to ping (using curl) after the GitHub Action has successfully updated your filters. Useful for monitoring.
    - `DISCORD_WEBHOOK_URL`: /Optional/ The Discord (or similar) webhook URL to send notifications to. Good for monitoring as well.
 3. Create the following GitHub Actions variables in your repository settings if you desire:
-   - `ALLOWLIST_URLS`: Uses your own allowlists. One URL per line. Recommended allowlists will be used if this variable is not provided.
-   - `BLOCKLIST_URLS`: Uses your own blocklists. One URL per line. Recommended blocklists will be used if this variable is not provided.
+   - `ALLOWLIST_URLS`: Uses your own allowlists. One entry per line. Recommended allowlists will be used if this variable is not provided.
+   - `BLOCKLIST_URLS`: Uses your own blocklists. One entry per line. Recommended blocklists will be used if this variable is not provided.
+     - Entry format supports both:
+       - `https://example.com/list.txt`
+       - `my-mirror|https://example.com/list.txt` (shows source name in logs/errors)
    - `BLOCK_PAGE_ENABLED`: Enable showing block page if host is blocked.
+   - `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE`: Set to `1` to reuse the previously downloaded `allowlist.txt` / `blocklist.txt` when refresh fails. Useful for temporary upstream outages.
+   - `CGPS_DOWNLOAD_HTTP_TIMEOUT_MS`: Per-request timeout in milliseconds for list downloads. Increase this if your list server is slow.
+   - `CGPS_DOWNLOAD_RETRY_DELAY_MS`: Delay between retries for non-429 failures.
+   - `CGPS_DOWNLOAD_RETRY_MAX_ATTEMPTS`: Maximum retry attempts for failed downloads.
 4. Create a new file in the repository named `.github/workflows/main.yml` with the contents of `auto_update_github_action.yml` found in this repository. The default settings will update your filters every week at 3 AM UTC. You can change this by editing the `schedule` property.
 5. Enable GitHub Actions in your repository settings.
+
+#### Example: your own uploaded blocklist mirrors in GitHub Actions
+
+Set your source URLs in Actions Variables:
+
+- Open your fork: **Settings → Secrets and variables → Actions → Variables**
+- Set `BLOCKLIST_URLS` as multiline text
+
+Example value for `BLOCKLIST_URLS`:
+
+```txt
+oisd-big|https://big.oisd.nl
+adtidy-2|https://filters.adtidy.org/android/filters/2.txt
+adtidy-7|https://filters.adtidy.org/android/filters/7.txt
+adtidy-11|https://filters.adtidy.org/android/filters/11.txt
+jpf-plus|https://yuki2718.github.io/adblock2/japanese/jpf-plus.txt
+```
+
+`name|url` format is recommended because names are shown in logs/errors.
+Use the same multiline format for `ALLOWLIST_URLS` as well.
+
+If you want **URLごとの1対1フォールバック** (one fallback file per URL), upload text files into your fork with this structure:
+
+- `fallback-lists/blocklist/<name>.txt`
+- `fallback-lists/allowlist/<name>.txt`
+
+`<name>` must match the left side of `name|url`.
+
+Example:
+
+- Variable entry: `oisd-big|https://big.oisd.nl`
+- Fallback file path: `fallback-lists/blocklist/oisd-big.txt`
+
+When that URL download fails, CGPS automatically uses the matched fallback file for that source only.
 
 ### DNS setup for Cloudflare Gateway
 
