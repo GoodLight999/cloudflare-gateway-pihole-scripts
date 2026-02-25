@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { unlink } from "node:fs/promises";
+import { rename, unlink } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import {
@@ -15,16 +15,22 @@ import { downloadFiles } from "./lib/utils.js";
 const allowlistUrls = USER_DEFINED_ALLOWLIST_URLS || RECOMMENDED_ALLOWLIST_URLS;
 const blocklistUrls = USER_DEFINED_BLOCKLIST_URLS || RECOMMENDED_BLOCKLIST_URLS;
 const listType = process.argv[2];
+const usePreviousListsOnDownloadFailure = !!parseInt(
+  process.env.CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE,
+  10
+);
 
 const downloadLists = async (filename, urls) => {
   const filePath = resolve(`./${filename}`);
+  const tempFilePath = resolve(`./${filename}.tmp`);
 
-  if (existsSync(filePath)) {
-    await unlink(filePath);
+  if (existsSync(tempFilePath)) {
+    await unlink(tempFilePath);
   }
 
   try {
-    await downloadFiles(filePath, urls);
+    await downloadFiles(tempFilePath, urls);
+    await rename(tempFilePath, filePath);
 
     console.log(
       `Done. The ${filename} file contains merged data from the following list(s):`
@@ -36,6 +42,17 @@ const downloadLists = async (filename, urls) => {
       )
     );
   } catch (err) {
+    if (existsSync(tempFilePath)) {
+      await unlink(tempFilePath);
+    }
+
+    if (usePreviousListsOnDownloadFailure && existsSync(filePath)) {
+      console.warn(
+        `Unable to refresh ${filename}. Reusing the previously downloaded file because CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE=1.`
+      );
+      return;
+    }
+
     console.error(`An error occurred while processing ${filename}:\n`, err);
     console.error("URLs:\n", urls);
     throw err;

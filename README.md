@@ -62,6 +62,7 @@ Please note that:
    - `ALLOWLIST_URLS`: Uses your own allowlists. One URL per line. Recommended allowlists will be used if this variable is not provided.
    - `BLOCKLIST_URLS`: Uses your own blocklists. One URL per line. Recommended blocklists will be used if this variable is not provided.
    - `BLOCK_PAGE_ENABLED`: Enable showing block page if host is blocked.
+   - `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE`: Set to `1` to reuse the previously downloaded `allowlist.txt` / `blocklist.txt` when refresh fails. Useful for temporary upstream outages.
 4. Create a new file in the repository named `.github/workflows/main.yml` with the contents of `auto_update_github_action.yml` found in this repository. The default settings will update your filters every week at 3 AM UTC. You can change this by editing the `schedule` property.
 5. Enable GitHub Actions in your repository settings.
 

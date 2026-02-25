@@ -30,11 +30,22 @@ jobs:
         run: |
           node cf_gateway_rule_delete.js || true
           node cf_list_delete.js || true
+
+      - name: Restore previous downloaded lists
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            allowlist.txt
+            blocklist.txt
+          key: cgps-filter-lists-${{ github.repository }}-${{ github.run_id }}
+          restore-keys: |
+            cgps-filter-lists-${{ github.repository }}-
           
       - name: Download filter lists
         env:
           BLOCKLIST_URLS: ${{ vars.BLOCKLIST_URLS }}
           ALLOWLIST_URLS: ${{ vars.ALLOWLIST_URLS }}
+          CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE: '1'
         run: node download_lists.js
         
       - name: Create new lists
@@ -51,3 +62,12 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           BLOCK_PAGE_ENABLED: ${{ vars.BLOCK_PAGE_ENABLED }}
         run: node cf_gateway_rule_create.js
+
+      - name: Cache downloaded lists for next run
+        uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: |
+            allowlist.txt
+            blocklist.txt
+          key: cgps-filter-lists-${{ github.repository }}-${{ github.run_id }}
