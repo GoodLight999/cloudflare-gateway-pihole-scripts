@@ -133,6 +133,11 @@ console.log(`Number of unnecessary domains: ${unnecessaryDomainCount}`);
 console.log(`Number of allowed domains: ${allowedDomainCount}`);
 console.log(`Number of blocked domains: ${domains.length}`);
 console.log(`Number of lists to be created: ${numberOfLists}`);
+if (numberOfLists >= 300) {
+  console.warn(
+    "Warning: this run is creating 300+ lists. Cloudflare may reject the last chunk with HTTP 400. Set CLOUDFLARE_LIST_ITEM_LIMIT to a slightly lower value (for example 299000)."
+  );
+}
 console.log("\n\n");
 
 (async () => {
