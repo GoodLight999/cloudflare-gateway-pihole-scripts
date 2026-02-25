@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { rename, unlink } from "node:fs/promises";
-import { resolve } from "node:path";
+import { resolve, join } from "node:path";
 
 import {
   LIST_TYPE,
@@ -21,6 +21,22 @@ const usePreviousListsOnDownloadFailure = !!parseInt(
 );
 const formatSource = (source) =>
   typeof source === "string" ? source : `${source.name}: ${source.url}`;
+const getSourceWithFallback = (filename, source) => {
+  if (typeof source === "string") return source;
+
+  const fallbackDirectory = resolve(
+    `./fallback-lists/${
+      filename === PROCESSING_FILENAME.ALLOWLIST
+        ? LIST_TYPE.ALLOWLIST
+        : LIST_TYPE.BLOCKLIST
+    }`
+  );
+
+  return {
+    ...source,
+    fallbackFilePath: join(fallbackDirectory, `${source.name}.txt`),
+  };
+};
 
 const downloadLists = async (filename, urls) => {
   const filePath = resolve(`./${filename}`);
@@ -31,7 +47,10 @@ const downloadLists = async (filename, urls) => {
   }
 
   try {
-    await downloadFiles(tempFilePath, urls);
+    await downloadFiles(
+      tempFilePath,
+      urls.map((source) => getSourceWithFallback(filename, source))
+    );
     await rename(tempFilePath, filePath);
 
     console.log(

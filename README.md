@@ -74,14 +74,7 @@ Please note that:
 
 #### Example: your own uploaded blocklist mirrors in GitHub Actions
 
-If you want a fallback that works even when all URLs are unreachable, commit files directly into your fork:
-
-- `blocklist.txt` in the repository root
-- `allowlist.txt` in the repository root (optional)
-
-When download fails, the workflow reuses these files because `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE=1` is enabled.
-
-Then set your source URLs in Actions Variables:
+Set your source URLs in Actions Variables:
 
 - Open your fork: **Settings → Secrets and variables → Actions → Variables**
 - Set `BLOCKLIST_URLS` as multiline text
@@ -98,6 +91,20 @@ jpf-plus|https://yuki2718.github.io/adblock2/japanese/jpf-plus.txt
 
 `name|url` format is recommended because names are shown in logs/errors.
 Use the same multiline format for `ALLOWLIST_URLS` as well.
+
+If you want **URLごとの1対1フォールバック** (one fallback file per URL), upload text files into your fork with this structure:
+
+- `fallback-lists/blocklist/<name>.txt`
+- `fallback-lists/allowlist/<name>.txt`
+
+`<name>` must match the left side of `name|url`.
+
+Example:
+
+- Variable entry: `oisd-big|https://big.oisd.nl`
+- Fallback file path: `fallback-lists/blocklist/oisd-big.txt`
+
+When that URL download fails, CGPS automatically uses the matched fallback file for that source only.
 
 ### DNS setup for Cloudflare Gateway
 
