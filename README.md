@@ -74,8 +74,17 @@ Please note that:
 
 #### Example: your own uploaded blocklist mirrors in GitHub Actions
 
-You **do not** add these URLs as files into this repository.  
-Instead, open your fork: **Settings → Secrets and variables → Actions → Variables**, then set `BLOCKLIST_URLS` as multiline text.
+If you want a fallback that works even when all URLs are unreachable, commit files directly into your fork:
+
+- `blocklist.txt` in the repository root
+- `allowlist.txt` in the repository root (optional)
+
+When download fails, the workflow reuses these files because `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE=1` is enabled.
+
+Then set your source URLs in Actions Variables:
+
+- Open your fork: **Settings → Secrets and variables → Actions → Variables**
+- Set `BLOCKLIST_URLS` as multiline text
 
 Example value for `BLOCKLIST_URLS`:
 

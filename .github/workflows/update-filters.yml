@@ -10,10 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout latest code
+      - name: Checkout repository code
         uses: actions/checkout@v4
-        with:
-          repository: mrrfv/cloudflare-gateway-pihole-scripts
           
       - name: Setup Node.js
         uses: actions/setup-node@v4
