@@ -66,8 +66,29 @@ Please note that:
        - `my-mirror|https://example.com/list.txt` (shows source name in logs/errors)
    - `BLOCK_PAGE_ENABLED`: Enable showing block page if host is blocked.
    - `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE`: Set to `1` to reuse the previously downloaded `allowlist.txt` / `blocklist.txt` when refresh fails. Useful for temporary upstream outages.
+   - `CGPS_DOWNLOAD_HTTP_TIMEOUT_MS`: Per-request timeout in milliseconds for list downloads. Increase this if your list server is slow.
+   - `CGPS_DOWNLOAD_RETRY_DELAY_MS`: Delay between retries for non-429 failures.
+   - `CGPS_DOWNLOAD_RETRY_MAX_ATTEMPTS`: Maximum retry attempts for failed downloads.
 4. Create a new file in the repository named `.github/workflows/main.yml` with the contents of `auto_update_github_action.yml` found in this repository. The default settings will update your filters every week at 3 AM UTC. You can change this by editing the `schedule` property.
 5. Enable GitHub Actions in your repository settings.
+
+#### Example: your own uploaded blocklist mirrors in GitHub Actions
+
+You **do not** add these URLs as files into this repository.  
+Instead, open your fork: **Settings → Secrets and variables → Actions → Variables**, then set `BLOCKLIST_URLS` as multiline text.
+
+Example value for `BLOCKLIST_URLS`:
+
+```txt
+oisd-big|https://big.oisd.nl
+adtidy-2|https://filters.adtidy.org/android/filters/2.txt
+adtidy-7|https://filters.adtidy.org/android/filters/7.txt
+adtidy-11|https://filters.adtidy.org/android/filters/11.txt
+jpf-plus|https://yuki2718.github.io/adblock2/japanese/jpf-plus.txt
+```
+
+`name|url` format is recommended because names are shown in logs/errors.
+Use the same multiline format for `ALLOWLIST_URLS` as well.
 
 ### DNS setup for Cloudflare Gateway
 
