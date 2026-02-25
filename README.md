@@ -59,8 +59,11 @@ Please note that:
    - `PING_URL`: /Optional/ The HTTP(S) URL to ping (using curl) after the GitHub Action has successfully updated your filters. Useful for monitoring.
    - `DISCORD_WEBHOOK_URL`: /Optional/ The Discord (or similar) webhook URL to send notifications to. Good for monitoring as well.
 3. Create the following GitHub Actions variables in your repository settings if you desire:
-   - `ALLOWLIST_URLS`: Uses your own allowlists. One URL per line. Recommended allowlists will be used if this variable is not provided.
-   - `BLOCKLIST_URLS`: Uses your own blocklists. One URL per line. Recommended blocklists will be used if this variable is not provided.
+   - `ALLOWLIST_URLS`: Uses your own allowlists. One entry per line. Recommended allowlists will be used if this variable is not provided.
+   - `BLOCKLIST_URLS`: Uses your own blocklists. One entry per line. Recommended blocklists will be used if this variable is not provided.
+     - Entry format supports both:
+       - `https://example.com/list.txt`
+       - `my-mirror|https://example.com/list.txt` (shows source name in logs/errors)
    - `BLOCK_PAGE_ENABLED`: Enable showing block page if host is blocked.
    - `CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE`: Set to `1` to reuse the previously downloaded `allowlist.txt` / `blocklist.txt` when refresh fails. Useful for temporary upstream outages.
 4. Create a new file in the repository named `.github/workflows/main.yml` with the contents of `auto_update_github_action.yml` found in this repository. The default settings will update your filters every week at 3 AM UTC. You can change this by editing the `schedule` property.

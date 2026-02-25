@@ -19,6 +19,8 @@ const usePreviousListsOnDownloadFailure = !!parseInt(
   process.env.CGPS_USE_PREVIOUS_LISTS_ON_DOWNLOAD_FAILURE,
   10
 );
+const formatSource = (source) =>
+  typeof source === "string" ? source : `${source.name}: ${source.url}`;
 
 const downloadLists = async (filename, urls) => {
   const filePath = resolve(`./${filename}`);
@@ -37,7 +39,8 @@ const downloadLists = async (filename, urls) => {
     );
     console.log(
       urls.reduce(
-        (previous, current, index) => previous + `${index + 1}. ${current}\n`,
+        (previous, current, index) =>
+          previous + `${index + 1}. ${formatSource(current)}\n`,
         ""
       )
     );
