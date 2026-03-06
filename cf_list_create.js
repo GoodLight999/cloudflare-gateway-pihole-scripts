@@ -138,7 +138,7 @@ console.log(`Number of blocked domains: ${domains.length}`);
 console.log(`Number of lists to be created: ${numberOfLists}`);
 if (LIST_CHUNK_LIMIT) {
   console.log(
-    `Chunk count limit is enabled: CLOUDFLARE_LIST_CHUNK_LIMIT=${LIST_CHUNK_LIMIT} (max ${LIST_CHUNK_LIMIT * LIST_ITEM_SIZE} domains before allowlist filtering).`
+    `Chunk count limit is enabled: CLOUDFLARE_LIST_CHUNK_LIMIT=${LIST_CHUNK_LIMIT} (max ${LIST_CHUNK_LIMIT * LIST_ITEM_SIZE} blocked domains).`
   );
 }
 if (numberOfLists >= 300) {
