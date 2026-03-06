@@ -5,6 +5,7 @@ import { synchronizeZeroTrustLists } from "./lib/api.js";
 import {
   DEBUG,
   DRY_RUN,
+  LIST_CHUNK_LIMIT,
   LIST_ITEM_LIMIT,
   LIST_ITEM_SIZE,
   PROCESSING_FILENAME,
@@ -28,6 +29,8 @@ const blocklistFilename = existsSync(PROCESSING_FILENAME.OLD_BLOCKLIST)
 const allowlist = new Map();
 const blocklist = new Map();
 const domains = [];
+const chunkLimitedDomainCap = LIST_CHUNK_LIMIT ? LIST_CHUNK_LIMIT * LIST_ITEM_SIZE : Number.POSITIVE_INFINITY;
+const effectiveListItemLimit = Math.min(LIST_ITEM_LIMIT, chunkLimitedDomainCap);
 let processedDomainCount = 0;
 let unnecessaryDomainCount = 0;
 let duplicateDomainCount = 0;
@@ -61,7 +64,7 @@ await readFile(resolve(`./${allowlistFilename}`), (line) => {
 // Read blocklist
 console.log(`Processing ${blocklistFilename}`);
 await readFile(resolve(`./${blocklistFilename}`), (line, rl) => {
-  if (domains.length === LIST_ITEM_LIMIT) {
+  if (domains.length === effectiveListItemLimit) {
     return;
   }
 
@@ -116,7 +119,7 @@ await readFile(resolve(`./${blocklistFilename}`), (line, rl) => {
   blocklist.set(domain, 1);
   domains.push(domain);
 
-  if (domains.length === LIST_ITEM_LIMIT) {
+  if (domains.length === effectiveListItemLimit) {
     console.log(
       "Maximum number of blocked domains reached - Stopping processing blocklist..."
     );
@@ -133,6 +136,11 @@ console.log(`Number of unnecessary domains: ${unnecessaryDomainCount}`);
 console.log(`Number of allowed domains: ${allowedDomainCount}`);
 console.log(`Number of blocked domains: ${domains.length}`);
 console.log(`Number of lists to be created: ${numberOfLists}`);
+if (LIST_CHUNK_LIMIT) {
+  console.log(
+    `Chunk count limit is enabled: CLOUDFLARE_LIST_CHUNK_LIMIT=${LIST_CHUNK_LIMIT} (max ${LIST_CHUNK_LIMIT * LIST_ITEM_SIZE} domains before allowlist filtering).`
+  );
+}
 if (numberOfLists >= 300) {
   console.warn(
     "Warning: this run is creating 300+ lists. Cloudflare may reject the last chunk with HTTP 400. Set CLOUDFLARE_LIST_ITEM_LIMIT to a slightly lower value (for example 299000)."
